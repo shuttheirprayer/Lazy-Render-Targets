@@ -33,6 +33,8 @@ public abstract class RenderTargetMixin implements LazyTargets.Target {
     private float[] f_83921_;
     @Shadow
     public int f_83922_;
+    @Shadow
+    protected int f_83923_;
 
     @Shadow
     public abstract void m_83950_(int width, int height, boolean clearError);
@@ -53,6 +55,8 @@ public abstract class RenderTargetMixin implements LazyTargets.Target {
     private boolean lrt$releasing;
     @Unique
     private boolean lrt$clearError;
+    @Unique
+    private boolean lrt$borrowed;
     @Unique
     private int lrt$filter = 9728;
     @Unique
@@ -175,17 +179,24 @@ public abstract class RenderTargetMixin implements LazyTargets.Target {
         lrt$use();
     }
 
-    @Inject(method = "m_83971_", at = @At("HEAD"), cancellable = true, remap = false)
+    @Inject(method = "m_83971_", at = @At("HEAD"), remap = false)
     private void lrt$blit(int width, int height, boolean disableBlend, CallbackInfo ci) {
         if (lrt$virtual && !disableBlend && f_83921_[3] == 0.0F && RenderSystem.isOnRenderThread()) {
-            GlStateManager._colorMask(true, true, true, true);
-            GlStateManager._disableDepthTest();
-            GlStateManager._depthMask(true);
-            GlStateManager._viewport(0, 0, width, height);
-            ci.cancel();
+            f_83923_ = LazyTargets.emptyTexture();
+            lrt$borrowed = true;
             return;
         }
         lrt$use();
+    }
+
+    @Inject(method = "m_83971_", at = @At("RETURN"), remap = false)
+    private void lrt$blitDone(int width, int height, boolean disableBlend, CallbackInfo ci) {
+        if (lrt$borrowed) {
+            lrt$borrowed = false;
+            if (lrt$virtual) {
+                f_83923_ = -1;
+            }
+        }
     }
 
     @Inject(method = "m_83945_", at = @At("HEAD"), remap = false)

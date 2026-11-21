@@ -3,7 +3,9 @@ package com.misanthropy.lazy_render_targets;
 import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
@@ -28,8 +30,18 @@ public final class LazyTargets {
     private static final List<WeakReference<Target>> TRACKED = new ArrayList<>();
     private static final float[] CLEAR = new float[4];
     private static final StackWalker WALKER = StackWalker.getInstance();
+    private static DynamicTexture empty;
 
     private LazyTargets() {
+    }
+
+    public static int emptyTexture() {
+        if (empty == null) {
+            int texture = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
+            empty = new DynamicTexture(new NativeImage(1, 1, true));
+            GlStateManager._bindTexture(texture);
+        }
+        return empty.getId();
     }
 
     public interface Target {
